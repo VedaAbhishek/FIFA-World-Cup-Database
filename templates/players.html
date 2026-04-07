@@ -1,0 +1,134 @@
+{% extends "base.html" %}
+{% block title %}Players — FIFA World Cup Database{% endblock %}
+{% block content %}
+<div class="page-header" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;">
+  <div>
+    <h1>👤 Players</h1>
+    {% if is_filtered %}
+      <p>{{ players|length }} player(s) found · Showing search results</p>
+    {% else %}
+      <p>Top 15 players by World Cup goals · Use search to find any player</p>
+    {% endif %}
+  </div>
+  <button class="btn-gold" data-bs-toggle="modal" data-bs-target="#addPlayerModal">
+    <i class="bi bi-plus-lg"></i> Add Player
+  </button>
+</div>
+
+<div class="page-body">
+  <!-- FILTERS -->
+  <form method="GET" class="card-fifa mb-4" style="padding:18px 20px;">
+    <div class="row g-2 align-items-end">
+      <div class="col-md-5 col-7">
+        <label>Search Name</label>
+        <input type="text" name="search" class="form-control-fifa w-100" placeholder="e.g. Pelé, Müller, Özil" value="{{ filters.search }}">
+      </div>
+      <div class="col-md-4 col-5">
+        <label>Country</label>
+        <select name="country" class="form-select-fifa w-100">
+          <option value="">All Countries</option>
+          {% for c in countries %}
+          <option value="{{ c.name }}" {{ 'selected' if filters.country==c.name }}>{{ c.name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-md-3 col-12">
+        <button type="submit" class="btn-gold w-100">Search</button>
+      </div>
+    </div>
+  </form>
+
+  <!-- TABLE -->
+  <div class="card-fifa">
+    <div style="overflow-x:auto;">
+      <table class="table-fifa">
+        <thead>
+          <tr>
+            <th>#</th><th>Player</th><th>Country</th>
+            <th>WC Goals</th><th>WC Matches</th><th>Goals/Match</th><th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for p in players %}
+          <tr>
+            <td style="color:var(--muted);">{{ loop.index }}</td>
+            <td><strong>{{ p.name }}</strong></td>
+            <td>{{ p.country }}</td>
+            <td><span style="color:var(--gold);font-weight:700;font-family:'Barlow Condensed',sans-serif;font-size:1.1rem;">{{ p.total_goals }}</span></td>
+            <td>{{ p.total_matches }}</td>
+            <td>{{ ('%.2f'|format(p.total_goals/p.total_matches)) if p.total_matches else '—' }}</td>
+            <td style="white-space:nowrap;">
+              <a href="{{ url_for('edit_player', player_id=p.player_id) }}" class="btn-outline-gold" style="padding:3px 10px;font-size:.78rem;">Edit</a>
+              <form method="POST" action="{{ url_for('delete_player', player_id=p.player_id) }}" style="display:inline;" onsubmit="return confirm('Remove this player?')">
+                <button type="submit" class="btn-danger-sm">Del</button>
+              </form>
+            </td>
+          </tr>
+          {% else %}
+          <tr><td colspan="7" style="text-align:center;color:var(--muted);padding:30px;">No players found. Try searching above.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- ADD PLAYER MODAL -->
+<div class="modal fade" id="addPlayerModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content modal-fifa">
+      <div class="modal-header-fifa d-flex align-items-center justify-content-between">
+        <span class="modal-title-fifa">Add New Player</span>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body-fifa">
+        <form method="POST" action="{{ url_for('add_player') }}">
+          <div class="row g-3">
+            <div class="col-12">
+              <label>Full Name *</label>
+              <input type="text" name="name" class="form-control-fifa w-100" required placeholder="e.g. Ronaldo Nazário">
+            </div>
+            <div class="col-12">
+              <label>Country *</label>
+              <select name="country_id" class="form-select-fifa w-100">
+                <option value="">— Select Country —</option>
+                {% for c in countries %}
+                <option value="{{ c.country_id }}">{{ c.name }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="col-md-4">
+              <label>WC Goals</label>
+              <input type="number" name="wc_goals" min="0" class="form-control-fifa w-100" value="0">
+            </div>
+            <div class="col-md-4">
+              <label>WC Matches</label>
+              <input type="number" name="wc_matches" min="0" class="form-control-fifa w-100" value="0">
+            </div>
+            <div class="col-md-4">
+              <label>Goals/Match</label>
+              <input type="text" id="goalsPerMatchPreview" class="form-control-fifa w-100" value="—" disabled
+                     style="background:rgba(255,255,255,.04);color:var(--muted);">
+            </div>
+          </div>
+          <div class="mt-4 text-end">
+            <button type="button" class="btn-outline-gold me-2" data-bs-dismiss="modal">Cancel</button>
+            <button type="submit" class="btn-gold">Save Player</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// Live goals/match preview
+document.querySelectorAll('[name=wc_goals],[name=wc_matches]').forEach(el => {
+  el.addEventListener('input', () => {
+    const g = parseFloat(document.querySelector('[name=wc_goals]').value) || 0;
+    const m = parseFloat(document.querySelector('[name=wc_matches]').value) || 0;
+    document.getElementById('goalsPerMatchPreview').value = m > 0 ? (g/m).toFixed(2) : '—';
+  });
+});
+</script>
+{% endblock %}

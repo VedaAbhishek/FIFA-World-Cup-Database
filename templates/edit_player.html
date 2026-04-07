@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% block title %}Edit Player — FIFA World Cup Database{% endblock %}
+{% block content %}
+<div class="page-header">
+  <h1>✏️ Edit Player</h1>
+  <p>{{ player.name }} · {{ player.country_name }}</p>
+</div>
+<div class="page-body">
+  <div class="card-fifa" style="max-width:480px;">
+    <div class="card-header-fifa">Player Details</div>
+    <div class="card-body">
+      <form method="POST" action="{{ url_for('edit_player', player_id=player.player_id) }}">
+        <div class="row g-3">
+          <div class="col-12">
+            <label>Full Name *</label>
+            <input type="text" name="name" class="form-control-fifa w-100" value="{{ player.name }}" required>
+          </div>
+          <div class="col-12">
+            <label>Country *</label>
+            <select name="country_id" class="form-select-fifa w-100" required>
+              {% for c in countries %}
+              <option value="{{ c.country_id }}" {{ 'selected' if c.country_id == player.country_id }}>{{ c.name }}</option>
+              {% endfor %}
+            </select>
+          </div>
+        </div>
+        <div class="mt-4 d-flex gap-2">
+          <a href="{{ url_for('players') }}" class="btn-outline-gold">← Back</a>
+          <button type="submit" class="btn-gold">Update Player</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

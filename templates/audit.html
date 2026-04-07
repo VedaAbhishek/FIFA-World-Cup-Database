@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% block title %}Audit Log — FIFA World Cup Database{% endblock %}
+{% block content %}
+<div class="page-header">
+  <h1>📋 Audit Log</h1>
+  <p>All INSERT, UPDATE, and DELETE operations — last 100 entries</p>
+</div>
+<div class="page-body">
+  <div class="card-fifa">
+    <div style="overflow-x:auto;">
+      <table class="table-fifa">
+        <thead>
+          <tr><th>ID</th><th>Table</th><th>Record ID</th><th>Action</th><th>Changed By</th><th>Timestamp</th><th>Details</th></tr>
+        </thead>
+        <tbody>
+          {% for log in logs %}
+          <tr>
+            <td style="color:var(--muted);">{{ log.log_id }}</td>
+            <td><code style="background:rgba(255,255,255,.07);padding:1px 7px;border-radius:4px;font-size:.8rem;">{{ log.table_name }}</code></td>
+            <td>{{ log.record_id }}</td>
+            <td>
+              {% if log.action=='INSERT' %}
+                <span style="color:#86EFAC;font-weight:600;">INSERT</span>
+              {% elif log.action=='UPDATE' %}
+                <span style="color:var(--gold);font-weight:600;">UPDATE</span>
+              {% else %}
+                <span style="color:#FCA5A5;font-weight:600;">DELETE</span>
+              {% endif %}
+            </td>
+            <td style="color:var(--muted);">{{ log.changed_by }}</td>
+            <td style="color:var(--muted);font-size:.82rem;white-space:nowrap;">{{ log.changed_at }}</td>
+            <td style="font-size:.78rem;color:var(--muted);max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="{{ log.details }}">{{ log.details or '—' }}</td>
+          </tr>
+          {% else %}
+          <tr><td colspan="7" style="text-align:center;color:var(--muted);padding:30px;">No audit records yet.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

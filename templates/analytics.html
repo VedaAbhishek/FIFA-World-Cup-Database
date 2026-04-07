@@ -1,0 +1,226 @@
+{% extends "base.html" %}
+{% block title %}Analytics — FIFA World Cup Database{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <h1>📊 Analytics</h1>
+  <p>Data visualizations · Goals trends · Top scorers · Winners · Attendance</p>
+</div>
+<div class="page-body">
+
+  <div class="row g-4">
+
+    <!-- GOALS TREND -->
+    <div class="col-12">
+      <div class="card-fifa">
+        <div class="card-header-fifa">⚽ Goals Per Match — Historical Trend (1930–2022)</div>
+        <div class="card-body"><canvas id="goalsTrend" height="80"></canvas></div>
+      </div>
+    </div>
+
+    <!-- TOP SCORERS -->
+    <div class="col-lg-7">
+      <div class="card-fifa h-100">
+        <div class="card-header-fifa">🥇 All-Time Top Scorers</div>
+        <div class="card-body" style="overflow-y:auto;max-height:420px;">
+          <canvas id="topScorers"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <!-- WINNERS PIE -->
+    <div class="col-lg-5">
+      <div class="card-fifa h-100">
+        <div class="card-header-fifa">🏆 World Cup Titles by Country</div>
+        <div class="card-body" style="display:flex;align-items:center;justify-content:center;">
+          <canvas id="winnersPie" height="240"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <!-- ATTENDANCE -->
+    <div class="col-12">
+      <div class="card-fifa">
+        <div class="card-header-fifa">👥 Total Attendance Per Tournament</div>
+        <div class="card-body"><canvas id="attendanceBar" height="70"></canvas></div>
+      </div>
+    </div>
+
+    <!-- TOP SCORERS TABLE -->
+    <div class="col-12">
+      <div class="card-fifa">
+        <div class="card-header-fifa">📋 All-Time Top Scorers — Top 15</div>
+        <div style="overflow-x:auto;">
+          <table class="table-fifa">
+            <thead>
+              <tr><th>#</th><th>Player</th><th>Country</th><th>Goals</th><th>Matches</th><th>Goals/Match</th></tr>
+            </thead>
+            <tbody>
+              {% for p in top_scorers %}
+              <tr>
+                <td style="color:var(--muted);">
+                  {% if loop.index == 1 %}🥇{% elif loop.index == 2 %}🥈{% elif loop.index == 3 %}🥉{% else %}{{ loop.index }}{% endif %}
+                </td>
+                <td><strong>{{ p.player }}</strong></td>
+                <td>{{ p.country }}</td>
+                <td>
+                  <div style="display:flex;align-items:center;gap:8px;">
+                    <div style="width:{{ [(p.total_goals/20*100)|int, 100]|min }}px;background:var(--gold);height:6px;border-radius:3px;max-width:80px;"></div>
+                    <span style="color:var(--gold);font-weight:700;font-family:'Barlow Condensed',sans-serif;font-size:1.1rem;">{{ p.total_goals }}</span>
+                  </div>
+                </td>
+                <td>{{ p.matches }}</td>
+                <td>{{ '%.2f'|format(p.total_goals/p.matches) if p.matches else '—' }}</td>
+              </tr>
+              {% else %}
+              <tr><td colspan="6" style="text-align:center;color:var(--muted);padding:30px;">No scorer data available.</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+const GOLD = '#C9A84C', GOLD_LT = 'rgba(201,168,76,0.15)', MUTED = '#8A9BB5';
+const gridColor = 'rgba(255,255,255,0.05)';
+const baseOpts = {
+  plugins:{ legend:{ labels:{ color: MUTED, font:{ family:'Barlow, sans-serif', size:12 } } } },
+  scales:{
+    x:{ ticks:{ color: MUTED }, grid:{ color: gridColor } },
+    y:{ ticks:{ color: MUTED }, grid:{ color: gridColor } }
+  }
+};
+const PALETTE = ['#C9A84C','#22893E','#2563EB','#9333EA','#EF4444','#F59E0B','#10B981','#06B6D4','#EC4899','#84CC16','#F97316','#6366F1'];
+
+// Goals Trend — single clean line: Avg Goals/Match only
+// Contributor: Veda Abhishek Kovvireddy
+fetch('/api/goals_trend').then(r=>r.json()).then(data=>{
+  new Chart(document.getElementById('goalsTrend'),{
+    type:'line',
+    data:{
+      labels: data.map(d=>d.year),
+      datasets:[{
+        label:'Avg Goals / Match',
+        data: data.map(d=>d.avg_goals_per_match),
+        borderColor: GOLD,
+        backgroundColor: GOLD_LT,
+        fill:true, tension:.4,
+        pointRadius:5, pointHoverRadius:8,
+        pointBackgroundColor: GOLD,
+        pointBorderColor: '#0A1628',
+        pointBorderWidth: 2
+      }]
+    },
+    options:{
+      ...baseOpts,
+      plugins:{
+        legend:{ labels:{ color: MUTED, font:{ family:'Barlow, sans-serif', size:13 } } },
+        tooltip:{ callbacks:{ label: ctx => ` ${ctx.parsed.y} goals/match` } }
+      },
+      scales:{
+        x:{ ticks:{ color:MUTED }, grid:{ color:gridColor } },
+        y:{ ticks:{ color:MUTED, callback: v => v.toFixed(1) }, grid:{ color:gridColor },
+            title:{ display:true, text:'Goals per Match', color:MUTED } }
+      }
+    }
+  });
+});
+
+// Top Scorers — fixed to top 15
+// Contributor: Mohammed Aazam Tadipatri
+fetch('/api/top_scorers').then(r=>r.json()).then(data=>{
+  const canvas = document.getElementById('topScorers');
+  canvas.height = Math.max(220, data.length * 32);
+  new Chart(canvas,{
+    type:'bar',
+    data:{
+      labels: data.map(d=>`${d.player} (${d.country})`),
+      datasets:[{
+        label:'WC Goals',
+        data: data.map(d=>d.total_goals),
+        backgroundColor: data.map((_,i)=>PALETTE[i%PALETTE.length]+'CC'),
+        borderColor: data.map((_,i)=>PALETTE[i%PALETTE.length]),
+        borderWidth:1, borderRadius:4
+      }]
+    },
+    options:{
+      indexAxis:'y',
+      ...baseOpts,
+      plugins:{
+        legend:{ labels:{ color:MUTED, font:{size:12} } },
+        tooltip:{ callbacks:{ label: ctx => ` ${ctx.parsed.x} goals` } }
+      },
+      scales:{
+        x:{ ticks:{ color:MUTED }, grid:{ color:gridColor } },
+        y:{ ticks:{ color:MUTED, font:{size:11} }, grid:{ display:false } }
+      }
+    }
+  });
+});
+
+// Winners Pie
+fetch('/api/winners').then(r=>r.json()).then(data=>{
+  new Chart(document.getElementById('winnersPie'),{
+    type:'doughnut',
+    data:{
+      labels: data.map(d=>d.country),
+      datasets:[{
+        data: data.map(d=>d.titles),
+        backgroundColor: PALETTE.map(c=>c+'CC'),
+        borderColor: '#0A1628', borderWidth:2, hoverOffset:8
+      }]
+    },
+    options:{
+      plugins:{
+        legend:{ position:'right', labels:{ color:MUTED, padding:12, font:{size:12} } }
+      }
+    }
+  });
+});
+
+// Attendance — Y-axis formatted with M/K suffix so scale is clear
+fetch('/api/attendance').then(r=>r.json()).then(data=>{
+  function fmtAtt(v){
+    if(v>=1000000) return (v/1000000).toFixed(2)+'M';
+    if(v>=1000) return (v/1000).toFixed(0)+'K';
+    return v;
+  }
+  new Chart(document.getElementById('attendanceBar'),{
+    type:'bar',
+    data:{
+      labels: data.map(d=>d.year),
+      datasets:[{
+        label:'Total Attendance',
+        data: data.map(d=>d.total_attendance),
+        backgroundColor:'rgba(34,137,62,.6)',
+        borderColor:'#22893E', borderWidth:1, borderRadius:4
+      }]
+    },
+    options:{
+      ...baseOpts,
+      plugins:{
+        legend:{ labels:{ color:MUTED, font:{ family:'Barlow, sans-serif', size:12 } } },
+        tooltip:{ callbacks:{ label: ctx => ` ${ctx.parsed.y.toLocaleString()} spectators` } }
+      },
+      scales:{
+        x:{ ticks:{ color:MUTED }, grid:{ color:gridColor } },
+        y:{
+          ticks:{
+            color:MUTED,
+            callback: v => fmtAtt(v)
+          },
+          grid:{ color:gridColor },
+          title:{ display:true, text:'Attendance', color:MUTED }
+        }
+      }
+    }
+  });
+});
+</script>
+{% endblock %}

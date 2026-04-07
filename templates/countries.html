@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% block title %}Countries — FIFA World Cup Database{% endblock %}
+{% block content %}
+<div class="page-header">
+  <h1>🌍 Countries</h1>
+  <p>{{ countries|length }} national teams with World Cup history</p>
+</div>
+<div class="page-body">
+  <div class="card-fifa">
+    <div style="overflow-x:auto;">
+      <table class="table-fifa">
+        <thead>
+          <tr>
+            <th>#</th><th>Country</th><th>Confederation</th><th>WC Titles</th><th>Matches Played</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for c in countries %}
+          <tr>
+            <td style="color:var(--muted);">{{ loop.index }}</td>
+            <td>
+              <strong>{{ c.name }}</strong>
+              {% if c.tournaments_won > 0 %}
+                <span style="margin-left:6px;">{% for i in range(c.tournaments_won) %}🏆{% endfor %}</span>
+              {% endif %}
+            </td>
+            <td>
+              {% if c.confederation %}
+                <span style="background:rgba(255,255,255,.07);border-radius:4px;padding:2px 9px;font-size:.78rem;color:var(--muted);">{{ c.confederation }}</span>
+              {% else %}—{% endif %}
+            </td>
+            <td>
+              {% if c.tournaments_won %}
+                <span style="color:var(--gold);font-weight:700;font-family:'Barlow Condensed',sans-serif;font-size:1.1rem;">{{ c.tournaments_won }}</span>
+              {% else %}
+                <span style="color:var(--muted);">0</span>
+              {% endif %}
+            </td>
+            <td>{{ c.total_matches }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

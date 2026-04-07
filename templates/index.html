@@ -1,0 +1,155 @@
+{% extends "base.html" %}
+{% block title %}Dashboard — FIFA World Cup Database{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <h1>⚽ World Cup Dashboard</h1>
+  <p>Complete historical record · {{ stats.tournaments }} tournaments</p>
+</div>
+
+<div class="page-body">
+
+  <!-- STAT TILES -->
+  <div class="row g-3 mb-4">
+    <div class="col-6 col-lg-3">
+      <div class="stat-tile">
+        <div class="icon" style="background:rgba(201,168,76,.12);color:var(--gold);">🏆</div>
+        <div>
+          <div class="val">{{ stats.tournaments }}</div>
+          <div class="lbl">Tournaments</div>
+        </div>
+      </div>
+    </div>
+    <div class="col-6 col-lg-3">
+      <div class="stat-tile">
+        <div class="icon" style="background:rgba(34,137,62,.12);color:#4ADE80;">⚽</div>
+        <div>
+          <div class="val">{{ stats.matches }}</div>
+          <div class="lbl">Matches</div>
+        </div>
+      </div>
+    </div>
+    <div class="col-6 col-lg-3">
+      <div class="stat-tile">
+        <div class="icon" style="background:rgba(59,130,246,.12);color:#93C5FD;">🌍</div>
+        <div>
+          <div class="val">{{ stats.countries }}</div>
+          <div class="lbl">Countries</div>
+        </div>
+      </div>
+    </div>
+    <div class="col-6 col-lg-3">
+      <div class="stat-tile">
+        <div class="icon" style="background:rgba(139,92,246,.12);color:#C4B5FD;">👤</div>
+        <div>
+          <div class="val">{{ stats.players }}</div>
+          <div class="lbl">Players</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- GOALS BANNER -->
+  <div style="background:linear-gradient(135deg,#1A6B3C,#0A4423);border-radius:12px;padding:22px 28px;margin-bottom:28px;border:1px solid rgba(74,222,128,.2);display:flex;align-items:center;justify-content:space-between;">
+    <div>
+      <div style="font-family:'Barlow Condensed',sans-serif;font-size:2.8rem;font-weight:800;color:#86EFAC;line-height:1;">{{ stats.total_goals }}</div>
+      <div style="color:#4ADE80;font-size:.85rem;text-transform:uppercase;letter-spacing:.1em;">Total Goals Scored in World Cup History</div>
+    </div>
+    <div style="font-size:4rem;opacity:.4;">⚽</div>
+  </div>
+
+  <div class="row g-4">
+    <!-- RECENT MATCHES -->
+    <div class="col-lg-8">
+      <div class="card-fifa">
+        <div class="card-header-fifa">📋 Recent & Notable Matches</div>
+        <div class="card-body p-0">
+          <table class="table-fifa">
+            <thead>
+              <tr>
+                <th>Year</th><th>Stage</th><th>Match</th><th>Score</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for m in recent_matches %}
+              <tr>
+                <td><span style="color:var(--gold);font-weight:700;">{{ m.year }}</span></td>
+                <td>
+                  {% set s = m.stage|lower %}
+                  {% if 'final' == s %}
+                    <span class="badge-stage badge-final">Final</span>
+                  {% elif 'semi' in s %}
+                    <span class="badge-stage badge-semi">Semi</span>
+                  {% elif 'quarter' in s %}
+                    <span class="badge-stage badge-quarter">QF</span>
+                  {% elif 'group' in s %}
+                    <span class="badge-stage badge-group">Group</span>
+                  {% else %}
+                    <span class="badge-stage badge-other">{{ m.stage }}</span>
+                  {% endif %}
+                </td>
+                <td>{{ m.home_team }} <span style="color:var(--muted);margin:0 4px;">vs</span> {{ m.away_team }}</td>
+                <td><span class="score-box"><span class="score-num">{{ m.home_score }}</span><span style="color:var(--muted);">–</span><span class="score-num">{{ m.away_score }}</span></span></td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- WINNERS -->
+    <div class="col-lg-4">
+      <div class="card-fifa h-100">
+        <div class="card-header-fifa">🥇 Most Titles</div>
+        <div class="card-body">
+          {% for w in winners %}
+          <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid rgba(255,255,255,.04);">
+            <span style="font-size:.9rem;">{{ w.country }}</span>
+            <span style="background:rgba(201,168,76,.15);color:var(--gold);padding:2px 12px;border-radius:20px;font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:1rem;">
+              {{ w.titles }}
+            </span>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MINI CHART -->
+  <div class="card-fifa mt-4">
+    <div class="card-header-fifa">📈 Goals Per Match Trend</div>
+    <div class="card-body">
+      <canvas id="trendChart" height="90"></canvas>
+    </div>
+  </div>
+
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+fetch('/api/goals_trend').then(r=>r.json()).then(data=>{
+  const ctx = document.getElementById('trendChart').getContext('2d');
+  new Chart(ctx,{
+    type:'line',
+    data:{
+      labels: data.map(d=>d.year),
+      datasets:[{
+        label:'Avg Goals/Match',
+        data: data.map(d=>d.avg_goals_per_match),
+        borderColor:'#C9A84C', backgroundColor:'rgba(201,168,76,.15)',
+        fill:true, tension:.4, pointBackgroundColor:'#C9A84C', pointRadius:4
+      }]
+    },
+    options:{
+      plugins:{legend:{labels:{color:'#8A9BB5'}}},
+      scales:{
+        x:{ticks:{color:'#8A9BB5'},grid:{color:'rgba(255,255,255,.04)'}},
+        y:{ticks:{color:'#8A9BB5'},grid:{color:'rgba(255,255,255,.04)'}}
+      }
+    }
+  });
+});
+</script>
+{% endblock %}

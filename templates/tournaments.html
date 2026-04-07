@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% block title %}Tournaments — FIFA World Cup Database{% endblock %}
+{% block content %}
+<div class="page-header">
+  <h1>🌍 Tournaments</h1>
+  <p>All {{ tournaments|length }} editions of the FIFA World Cup · 1930 – 2022</p>
+</div>
+<div class="page-body">
+  <div class="card-fifa">
+    <div style="overflow-x:auto;">
+      <table class="table-fifa">
+        <thead>
+          <tr>
+            <th>Year</th><th>Host</th><th>Winner</th><th>Runner-Up</th>
+            <th>3rd Place</th><th>Matches</th><th>Goals</th><th>Avg Goals/Match</th><th>Attendance</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for t in tournaments|sort(attribute='year', reverse=True) %}
+          <tr>
+            <td><strong style="color:var(--gold);font-family:'Barlow Condensed',sans-serif;font-size:1.1rem;">{{ t.year }}</strong></td>
+            <td>{{ t.host_country }}</td>
+            <td>
+              {% if t.winner %}
+                <span style="display:inline-flex;align-items:center;gap:5px;">
+                  🏆 <strong>{{ t.winner }}</strong>
+                </span>
+              {% else %}—{% endif %}
+            </td>
+            <td><strong>{{ t.runner_up or '—' }}</strong></td>
+            <td>{{ t.third_place or '—' }}</td>
+            <td>{{ t.total_matches }}</td>
+            <td><span style="color:var(--gold);font-weight:700;">{{ t.total_goals }}</span></td>
+            <td>
+              <div style="display:flex;align-items:center;gap:8px;">
+                <div style="flex:1;background:rgba(255,255,255,.06);border-radius:4px;height:6px;max-width:80px;">
+                  <div style="width:{{ [((t.avg_goals_per_match or 0)/6*100)|int, 100]|min }}%;background:var(--gold);height:100%;border-radius:4px;"></div>
+                </div>
+                <span style="font-size:.85rem;">{{ t.avg_goals_per_match or '—' }}</span>
+              </div>
+            </td>
+            <td style="font-size:.82rem;color:var(--muted);">
+              {{ '{:,}'.format(t.total_attendance|int) if t.total_attendance and t.total_attendance > 0 else '—' }}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

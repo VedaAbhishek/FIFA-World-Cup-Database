@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+{% block title %}Edit Match — FIFA World Cup Database{% endblock %}
+{% block content %}
+<div class="page-header">
+  <h1>✏️ Edit Match</h1>
+  <p>{{ match.home_team }} vs {{ match.away_team }} · {{ match.year }} {{ match.stage }}</p>
+</div>
+<div class="page-body">
+  <div class="card-fifa" style="max-width:620px;">
+    <div class="card-header-fifa">Match Details</div>
+    <div class="card-body">
+      <form method="POST" action="{{ url_for('edit_match', match_id=match.match_id) }}">
+        <div class="row g-3">
+          <div class="col-12" style="color:var(--muted);font-size:.9rem;">
+            <strong style="color:var(--white);">{{ match.home_team }}</strong> vs
+            <strong style="color:var(--white);">{{ match.away_team }}</strong>
+            · {{ match.year }}
+          </div>
+          <div class="col-md-6">
+            <label>Home Score *</label>
+            <input type="number" name="home_score" min="0" class="form-control-fifa w-100" value="{{ match.home_score }}" required>
+          </div>
+          <div class="col-md-6">
+            <label>Away Score *</label>
+            <input type="number" name="away_score" min="0" class="form-control-fifa w-100" value="{{ match.away_score }}" required>
+          </div>
+          <div class="col-md-6">
+            <label>Stage *</label>
+            <input type="text" name="stage" class="form-control-fifa w-100" value="{{ match.stage }}" required>
+          </div>
+          <div class="col-md-6">
+            <label>Match Date</label>
+            <input type="date" name="match_date" class="form-control-fifa w-100" value="{{ match.match_date or '' }}">
+          </div>
+          <div class="col-12">
+            <label>Attendance</label>
+            <input type="number" name="attendance" min="0" class="form-control-fifa w-100" value="{{ match.attendance or '' }}">
+          </div>
+        </div>
+        <div class="mt-4 d-flex gap-2">
+          <a href="{{ url_for('matches') }}" class="btn-outline-gold">← Back</a>
+          <button type="submit" class="btn-gold">Update Match</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

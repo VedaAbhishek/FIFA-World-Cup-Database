@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>{% block title %}FIFA World Cup Database{% endblock %}</title>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;800&family=Barlow:wght@300;400;500;600&display=swap" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+  :root {
+    --gold:    #C9A84C;
+    --gold-lt: #E8C97A;
+    --navy:    #0A1628;
+    --navy-2:  #0F2144;
+    --grass:   #1A6B3C;
+    --grass-lt:#22893E;
+    --red:     #C0392B;
+    --white:   #F5F5F0;
+    --muted:   #8A9BB5;
+    --border:  rgba(201,168,76,0.2);
+  }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--navy);
+    color: var(--white);
+    font-family: 'Barlow', sans-serif;
+    font-weight: 400;
+    min-height: 100vh;
+  }
+  h1,h2,h3,h4,h5 { font-family: 'Barlow Condensed', sans-serif; letter-spacing: 0.03em; }
+
+  /* ── SIDEBAR ── */
+  .sidebar {
+    position: fixed; top: 0; left: 0; height: 100vh; width: 240px;
+    background: var(--navy-2);
+    border-right: 1px solid var(--border);
+    display: flex; flex-direction: column;
+    z-index: 1000; overflow: hidden;
+  }
+  .sidebar-brand {
+    padding: 28px 20px 20px;
+    border-bottom: 1px solid var(--border);
+  }
+  .sidebar-brand .trophy { font-size: 2rem; color: var(--gold); }
+  .sidebar-brand h2 {
+    font-size: 1.35rem; line-height: 1.15; color: var(--gold);
+    text-transform: uppercase; font-weight: 800; margin-top: 6px;
+  }
+  .sidebar-brand p { font-size: .72rem; color: var(--muted); margin-top: 4px; }
+  .sidebar-nav { padding: 20px 0; flex: 1; }
+  .sidebar-nav a {
+    display: flex; align-items: center; gap: 10px;
+    padding: 10px 22px; color: var(--muted);
+    text-decoration: none; font-size: .9rem; font-weight: 500;
+    transition: all .2s; border-left: 3px solid transparent;
+    font-family: 'Barlow Condensed', sans-serif; font-size: 1rem; letter-spacing: .05em;
+  }
+  .sidebar-nav a:hover, .sidebar-nav a.active {
+    color: var(--gold); border-left-color: var(--gold);
+    background: rgba(201,168,76,.07);
+  }
+  .sidebar-nav .nav-section {
+    font-size: .7rem; color: var(--muted); letter-spacing: .12em;
+    text-transform: uppercase; padding: 14px 22px 6px;
+  }
+  .sidebar-footer {
+    padding: 16px 20px; font-size: .72rem; color: var(--muted);
+    border-top: 1px solid var(--border);
+  }
+
+  /* ── MAIN ── */
+  .main-content { margin-left: 240px; min-height: 100vh; }
+  .page-header {
+    background: linear-gradient(135deg, var(--navy-2) 0%, #0D1E38 100%);
+    border-bottom: 1px solid var(--border);
+    padding: 28px 36px;
+  }
+  .page-header h1 { font-size: 2rem; color: var(--gold); font-weight: 800; text-transform: uppercase; }
+  .page-header p  { color: var(--muted); font-size: .9rem; margin-top: 4px; }
+  .page-body { padding: 28px 36px; }
+
+  /* ── CARDS ── */
+  .card-fifa {
+    background: var(--navy-2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    overflow: hidden;
+  }
+  .card-fifa .card-header-fifa {
+    background: rgba(201,168,76,.08);
+    border-bottom: 1px solid var(--border);
+    padding: 14px 20px;
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 1.05rem; font-weight: 700; color: var(--gold);
+    text-transform: uppercase; letter-spacing: .06em;
+  }
+  .card-fifa .card-body { padding: 20px; }
+
+  /* ── STAT TILES ── */
+  .stat-tile {
+    background: var(--navy-2); border: 1px solid var(--border);
+    border-radius: 10px; padding: 20px 22px;
+    display: flex; align-items: center; gap: 16px;
+    transition: transform .2s;
+  }
+  .stat-tile:hover { transform: translateY(-3px); }
+  .stat-tile .icon {
+    width: 50px; height: 50px; border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.4rem;
+  }
+  .stat-tile .val { font-size: 1.75rem; font-weight: 800; color: var(--gold); font-family: 'Barlow Condensed', sans-serif; }
+  .stat-tile .lbl { font-size: .78rem; color: var(--muted); text-transform: uppercase; letter-spacing: .08em; }
+
+  /* ── TABLES ── */
+  .table-fifa { width: 100%; border-collapse: collapse; font-size: .88rem; }
+  .table-fifa th {
+    background: rgba(201,168,76,.1); color: var(--gold);
+    font-family: 'Barlow Condensed', sans-serif; letter-spacing: .08em;
+    text-transform: uppercase; font-size: .8rem; padding: 10px 14px;
+    border-bottom: 1px solid var(--border); white-space: nowrap;
+  }
+  .table-fifa td { padding: 9px 14px; border-bottom: 1px solid rgba(255,255,255,.04); vertical-align: middle; }
+  .table-fifa tr:hover td { background: rgba(255,255,255,.03); }
+  .table-fifa tr:last-child td { border-bottom: none; }
+
+  /* ── BADGES ── */
+  .badge-stage {
+    display: inline-block; padding: 2px 9px; border-radius: 4px;
+    font-size: .72rem; font-weight: 600; letter-spacing: .06em; text-transform: uppercase;
+  }
+  .badge-final   { background: rgba(201,168,76,.2); color: var(--gold); }
+  .badge-semi    { background: rgba(22,139,78,.2); color: #4ADE80; }
+  .badge-quarter { background: rgba(59,130,246,.2); color: #93C5FD; }
+  .badge-group   { background: rgba(139,92,246,.2); color: #C4B5FD; }
+  .badge-other   { background: rgba(255,255,255,.07); color: var(--muted); }
+
+  /* ── FORMS ── */
+  .form-control-fifa, .form-select-fifa {
+    background: rgba(255,255,255,.05); border: 1px solid var(--border);
+    color: var(--white); border-radius: 7px; padding: 8px 14px; font-size: .88rem;
+    outline: none; transition: border .2s;
+    font-family: 'Barlow', sans-serif;
+  }
+  .form-control-fifa:focus, .form-select-fifa:focus {
+    border-color: var(--gold); box-shadow: 0 0 0 3px rgba(201,168,76,.15);
+    background: rgba(255,255,255,.07); color: var(--white);
+  }
+  .form-control-fifa::placeholder { color: var(--muted); }
+  .form-select-fifa option { background: var(--navy-2); color: var(--white); }
+
+  .btn-gold {
+    background: var(--gold); color: var(--navy);
+    border: none; border-radius: 7px; padding: 8px 20px;
+    font-family: 'Barlow Condensed', sans-serif; font-size: 1rem;
+    font-weight: 700; letter-spacing: .06em; text-transform: uppercase;
+    cursor: pointer; transition: background .2s;
+  }
+  .btn-gold:hover { background: var(--gold-lt); }
+  .btn-outline-gold {
+    background: transparent; border: 1px solid var(--gold); color: var(--gold);
+    border-radius: 7px; padding: 6px 16px;
+    font-family: 'Barlow Condensed', sans-serif; font-size: .9rem;
+    font-weight: 600; cursor: pointer; transition: all .2s; text-decoration: none;
+    display: inline-block;
+  }
+  .btn-outline-gold:hover { background: var(--gold); color: var(--navy); }
+  .btn-danger-sm {
+    background: rgba(192,57,43,.2); border: 1px solid rgba(192,57,43,.4);
+    color: #EF9A9A; border-radius: 6px; padding: 4px 12px;
+    font-size: .78rem; cursor: pointer; transition: all .2s; font-family: 'Barlow Condensed', sans-serif;
+  }
+  .btn-danger-sm:hover { background: rgba(192,57,43,.5); color: #fff; }
+
+  /* ── ALERTS ── */
+  .alert-fifa {
+    border-radius: 8px; padding: 12px 18px; font-size: .88rem; margin-bottom: 18px;
+    border-left: 4px solid;
+  }
+  .alert-success { background: rgba(34,137,62,.15); border-color: var(--grass-lt); color: #86EFAC; }
+  .alert-danger  { background: rgba(192,57,43,.15); border-color: var(--red); color: #FCA5A5; }
+  .alert-warning { background: rgba(201,168,76,.12); border-color: var(--gold); color: var(--gold-lt); }
+
+  /* ── SCORE BOX ── */
+  .score-box {
+    display: inline-flex; align-items: center; gap: 8px; font-family: 'Barlow Condensed', sans-serif;
+    font-size: 1rem; font-weight: 700;
+  }
+  .score-num { color: var(--gold); font-size: 1.2rem; }
+
+  /* ── MODAL ── */
+  .modal-fifa { background: var(--navy-2); border: 1px solid var(--border); border-radius: 12px; }
+  .modal-header-fifa {
+    background: rgba(201,168,76,.08); border-bottom: 1px solid var(--border);
+    padding: 16px 24px;
+  }
+  .modal-title-fifa { color: var(--gold); font-family: 'Barlow Condensed', sans-serif; font-size: 1.3rem; font-weight: 800; text-transform: uppercase; }
+  .modal-body-fifa { padding: 24px; }
+  label { font-size: .82rem; color: var(--muted); text-transform: uppercase; letter-spacing: .07em; margin-bottom: 5px; display: block; }
+
+  /* Responsive */
+  @media(max-width:768px){
+    .sidebar { width: 200px; }
+    .main-content { margin-left: 200px; }
+    .page-body, .page-header { padding: 18px 18px; }
+  }
+</style>
+{% block extra_head %}{% endblock %}
+</head>
+<body>
+
+<!-- Sidebar -->
+<nav class="sidebar">
+  <div class="sidebar-brand">
+    <div class="trophy">🏆</div>
+    <h2>FIFA WORLD CUP<br>DATABASE</h2>
+    <p>Historical Data</p>
+  </div>
+  <div class="sidebar-nav">
+    <div class="nav-section">Overview</div>
+    <a href="{{ url_for('index') }}" class="{{ 'active' if request.endpoint=='index' }}">
+      <i class="bi bi-house-fill"></i> Dashboard
+    </a>
+    <a href="{{ url_for('analytics') }}" class="{{ 'active' if request.endpoint=='analytics' }}">
+      <i class="bi bi-bar-chart-fill"></i> Analytics
+    </a>
+    <a href="{{ url_for('head2head') }}" class="{{ 'active' if request.endpoint=='head2head' }}">
+      <i class="bi bi-trophy-fill"></i> Head-to-Head
+    </a>
+    <div class="nav-section">Data</div>
+    <a href="{{ url_for('matches') }}" class="{{ 'active' if request.endpoint=='matches' }}">
+      <i class="bi bi-calendar3"></i> Matches
+    </a>
+    <a href="{{ url_for('players') }}" class="{{ 'active' if request.endpoint=='players' }}">
+      <i class="bi bi-person-fill"></i> Players
+    </a>
+    <a href="{{ url_for('tournaments') }}" class="{{ 'active' if request.endpoint=='tournaments' }}">
+      <i class="bi bi-globe2"></i> Tournaments
+    </a>
+    <a href="{{ url_for('countries') }}" class="{{ 'active' if request.endpoint=='countries' }}">
+      <i class="bi bi-flag-fill"></i> Countries
+    </a>
+    <div class="nav-section">System</div>
+    <a href="{{ url_for('audit') }}" class="{{ 'active' if request.endpoint=='audit' }}">
+      <i class="bi bi-journal-text"></i> Audit Log
+    </a>
+  </div>
+  <div class="sidebar-footer">
+    ADT Project · IU Bloomington<br>Spring 2026
+  </div>
+</nav>
+
+<!-- Main Content -->
+<div class="main-content">
+  {% block content %}{% endblock %}
+</div>
+
+<!-- Flash Messages (bottom-right toast style) -->
+{% with messages = get_flashed_messages(with_categories=true) %}
+  {% if messages %}
+    <div style="position:fixed;bottom:24px;right:24px;z-index:9999;min-width:280px;">
+      {% for cat, msg in messages %}
+        <div class="alert-fifa alert-{{ cat }}" style="box-shadow:0 4px 24px rgba(0,0,0,.4);">{{ msg }}</div>
+      {% endfor %}
+    </div>
+  {% endif %}
+{% endwith %}
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+{% block scripts %}{% endblock %}
+</body>
+</html>

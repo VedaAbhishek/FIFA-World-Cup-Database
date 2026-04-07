@@ -1,0 +1,132 @@
+{% extends "base.html" %}
+{% block title %}Head-to-Head — FIFA World Cup Database{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <h1>⚔️ Head-to-Head</h1>
+  <p>Compare any two nations' World Cup record against each other</p>
+</div>
+<div class="page-body">
+
+  <!-- SELECTOR -->
+  <div class="card-fifa mb-4" style="padding:24px;">
+    <div class="row g-3 align-items-center">
+      <div class="col-md-5">
+        <label>Team 1</label>
+        <select id="team1" class="form-select-fifa w-100">
+          <option value="">— Select Team —</option>
+          {% for c in countries %}<option value="{{ c.name }}">{{ c.name }}</option>{% endfor %}
+        </select>
+      </div>
+      <div class="col-md-2 text-center" style="font-family:'Barlow Condensed',sans-serif;font-size:1.5rem;color:var(--muted);">VS</div>
+      <div class="col-md-5">
+        <label>Team 2</label>
+        <select id="team2" class="form-select-fifa w-100">
+          <option value="">— Select Team —</option>
+          {% for c in countries %}<option value="{{ c.name }}">{{ c.name }}</option>{% endfor %}
+        </select>
+      </div>
+    </div>
+    <div class="mt-3">
+      <button class="btn-gold" onclick="loadH2H()">Compare</button>
+    </div>
+  </div>
+
+  <!-- RESULTS -->
+  <div id="h2h-results" style="display:none;">
+    <div class="row g-4 mb-4">
+      <div class="col-md-4">
+        <div class="stat-tile" style="flex-direction:column;align-items:flex-start;gap:4px;">
+          <div class="lbl" id="t1label">Team 1</div>
+          <div class="val" id="t1wins">0</div>
+          <div class="lbl">Wins</div>
+        </div>
+      </div>
+      <div class="col-md-4">
+        <div class="stat-tile" style="flex-direction:column;align-items:flex-start;gap:4px;">
+          <div class="lbl">Draws</div>
+          <div class="val" id="draws">0</div>
+          <div class="lbl">After 90 mins</div>
+        </div>
+      </div>
+      <div class="col-md-4">
+        <div class="stat-tile" style="flex-direction:column;align-items:flex-start;gap:4px;">
+          <div class="lbl" id="t2label">Team 2</div>
+          <div class="val" id="t2wins">0</div>
+          <div class="lbl">Wins</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- MATCHES TABLE -->
+    <div class="card-fifa">
+      <div class="card-header-fifa" id="h2h-header">Match History</div>
+      <div style="overflow-x:auto;">
+        <table class="table-fifa">
+          <thead><tr><th>Year</th><th>Stage</th><th>Date</th><th>Home</th><th>Score</th><th>Away</th></tr></thead>
+          <tbody id="h2h-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div id="h2h-empty" style="text-align:center;color:var(--muted);padding:48px 0;display:none;">
+    <div style="font-size:3rem;">⚽</div>
+    <div style="margin-top:12px;">No World Cup meetings found between these teams.</div>
+  </div>
+
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function loadH2H(){
+  const t1 = document.getElementById('team1').value;
+  const t2 = document.getElementById('team2').value;
+  if(!t1||!t2){ alert('Please select both teams.'); return; }
+  if(t1===t2){ alert('Please select different teams.'); return; }
+
+  fetch(`/api/head2head?team1=${encodeURIComponent(t1)}&team2=${encodeURIComponent(t2)}`)
+    .then(r=>r.json())
+    .then(data=>{
+      document.getElementById('h2h-results').style.display = 'none';
+      document.getElementById('h2h-empty').style.display = 'none';
+      if(data.length===0){
+        document.getElementById('h2h-empty').style.display='block'; return;
+      }
+      let w1=0, w2=0, d=0;
+      const tbody = document.getElementById('h2h-tbody');
+      tbody.innerHTML='';
+      data.forEach(m=>{
+        const isHome = m.home_team===t1;
+        const gs = isHome ? m.home_score : m.away_score;
+        const ga = isHome ? m.away_score : m.home_score;
+        if(gs>ga) w1++; else if(ga>gs) w2++; else d++;
+
+        let stageBadge = `<span class="badge-stage badge-other">${m.stage}</span>`;
+        if(m.stage==='Final') stageBadge=`<span class="badge-stage badge-final">Final</span>`;
+        else if(m.stage.toLowerCase().includes('semi')) stageBadge=`<span class="badge-stage badge-semi">Semi</span>`;
+        else if(m.stage.toLowerCase().includes('quarter')) stageBadge=`<span class="badge-stage badge-quarter">QF</span>`;
+        else if(m.stage.toLowerCase().includes('group')) stageBadge=`<span class="badge-stage badge-group">Group</span>`;
+
+        const winner = m.home_score>m.away_score ? m.home_team : m.away_score>m.home_score ? m.away_team : null;
+        tbody.innerHTML += `<tr>
+          <td><strong style="color:var(--gold);">${m.year}</strong></td>
+          <td>${stageBadge}</td>
+          <td style="color:var(--muted);font-size:.82rem;">${m.match_date||'—'}</td>
+          <td style="${m.home_team===winner?'font-weight:700;':''}">${m.home_team}</td>
+          <td><span class="score-box"><span class="score-num">${m.home_score}</span><span style="color:var(--muted);">–</span><span class="score-num">${m.away_score}</span></span></td>
+          <td style="${m.away_team===winner?'font-weight:700;':''}">${m.away_team}</td>
+        </tr>`;
+      });
+      document.getElementById('t1label').textContent = t1;
+      document.getElementById('t2label').textContent = t2;
+      document.getElementById('t1wins').textContent = w1;
+      document.getElementById('t2wins').textContent = w2;
+      document.getElementById('draws').textContent = d;
+      document.getElementById('h2h-header').textContent = `${t1} vs ${t2} — ${data.length} World Cup Meeting${data.length>1?'s':''}`;
+      document.getElementById('h2h-results').style.display='block';
+    });
+}
+</script>
+{% endblock %}

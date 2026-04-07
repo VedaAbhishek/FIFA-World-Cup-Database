@@ -1,0 +1,257 @@
+{% extends "base.html" %}
+{% block title %}Matches — FIFA World Cup Database{% endblock %}
+
+{% block content %}
+<div class="page-header" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;">
+  <div>
+    <h1>🗓️ Matches</h1>
+    <p>{{ matches|length }} results · Filter, view, add, edit, or remove match records</p>
+  </div>
+  <div style="display:flex;gap:10px;flex-wrap:wrap;">
+    <button class="btn-outline-gold" data-bs-toggle="modal" data-bs-target="#addTournamentModal">
+      <i class="bi bi-calendar-plus"></i> Add Tournament Year
+    </button>
+    <button class="btn-gold" data-bs-toggle="modal" data-bs-target="#addMatchModal">
+      <i class="bi bi-plus-lg"></i> Add Match
+    </button>
+  </div>
+</div>
+
+<div class="page-body">
+
+  <!-- FILTERS -->
+  <form method="GET" class="card-fifa mb-4" style="padding:18px 20px;">
+    <div class="row g-2 align-items-end">
+      <div class="col-md-3 col-6">
+        <label>Year</label>
+        <select name="year" class="form-select-fifa w-100">
+          <option value="">All Years</option>
+          {% for y in years %}
+          <option value="{{ y }}" {{ 'selected' if filters.year==y|string }}>{{ y }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-md-3 col-6">
+        <label>Stage</label>
+        <select name="stage" class="form-select-fifa w-100">
+          <option value="">All Stages</option>
+          {% for s in stages %}
+          <option value="{{ s }}" {{ 'selected' if filters.stage==s }}>{{ s }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-md-4 col-8">
+        <label>Team Search</label>
+        <input type="text" name="team" class="form-control-fifa w-100" placeholder="e.g. Brazil" value="{{ filters.team }}">
+      </div>
+      <div class="col-md-2 col-4">
+        <button type="submit" class="btn-gold w-100">Filter</button>
+      </div>
+    </div>
+  </form>
+
+  <!-- TABLE -->
+  <div class="card-fifa">
+    <div style="overflow-x:auto;">
+      <table class="table-fifa">
+        <thead>
+          <tr>
+            <th>Year</th><th>Stage</th><th>Date</th><th>Home Team</th>
+            <th>Score</th><th>Away Team</th><th>Venue</th><th>Att.</th><th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for m in matches %}
+          <tr>
+            <td><strong style="color:var(--gold);">{{ m.year }}</strong></td>
+            <td>
+              {% set s = m.stage|lower %}
+              {% if 'final' == s %}
+                <span class="badge-stage badge-final">Final</span>
+              {% elif 'semi' in s %}
+                <span class="badge-stage badge-semi">Semi</span>
+              {% elif 'quarter' in s %}
+                <span class="badge-stage badge-quarter">QF</span>
+              {% elif 'round of 16' in s %}
+                <span class="badge-stage badge-other" style="background:rgba(37,99,235,.25);color:#60A5FA;">R16</span>
+              {% elif 'third' in s %}
+                <span class="badge-stage badge-other" style="background:rgba(201,168,76,.15);color:var(--gold);">3rd</span>
+              {% elif 'group' in s %}
+                <span class="badge-stage badge-group">Group</span>
+              {% else %}
+                <span class="badge-stage badge-other">{{ m.stage }}</span>
+              {% endif %}
+            </td>
+            <td style="color:var(--muted);font-size:.82rem;">{{ m.match_date or '—' }}</td>
+            <td>{{ m.home_team }}</td>
+            <td>
+              <span class="score-box">
+                <span class="score-num">{{ m.home_score }}</span>
+                <span style="color:var(--muted);">–</span>
+                <span class="score-num">{{ m.away_score }}</span>
+              </span>
+            </td>
+            <td>{{ m.away_team }}</td>
+            <td style="font-size:.8rem;color:var(--muted);">{{ m.venue or '—' }}{% if m.city %}, {{ m.city }}{% endif %}</td>
+            <td style="font-size:.8rem;color:var(--muted);">{{ '{:,}'.format(m.attendance) if m.attendance else '—' }}</td>
+            <td style="white-space:nowrap;">
+              <a href="{{ url_for('edit_match', match_id=m.match_id) }}" class="btn-outline-gold" style="padding:3px 10px;font-size:.78rem;">Edit</a>
+              <form method="POST" action="{{ url_for('delete_match', match_id=m.match_id) }}" style="display:inline;" onsubmit="return confirm('Soft-delete this match?')">
+                <button type="submit" class="btn-danger-sm">Del</button>
+              </form>
+            </td>
+          </tr>
+          {% else %}
+          <tr><td colspan="9" style="text-align:center;color:var(--muted);padding:30px;">No matches found.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- ADD TOURNAMENT MODAL -->
+<div class="modal fade" id="addTournamentModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content modal-fifa">
+      <div class="modal-header-fifa d-flex align-items-center justify-content-between">
+        <span class="modal-title-fifa">Add Tournament Year</span>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body-fifa">
+        <form method="POST" action="{{ url_for('add_tournament') }}">
+          <div class="row g-3">
+            <div class="col-md-6">
+              <label>Year *</label>
+              <input type="number" name="year" min="2018" max="2050" class="form-control-fifa w-100" required placeholder="e.g. 2026">
+            </div>
+            <div class="col-md-6">
+              <label>Host Country *</label>
+              <input type="text" name="host_country" class="form-control-fifa w-100" placeholder="e.g. USA / Canada / Mexico">
+            </div>
+            <div class="col-12">
+              <p style="color:var(--muted);font-size:.82rem;margin:0;">Winner, runner-up, and other details can be filled in later once the tournament completes.</p>
+            </div>
+          </div>
+          <div class="mt-4 text-end">
+            <button type="button" class="btn-outline-gold me-2" data-bs-dismiss="modal">Cancel</button>
+            <button type="submit" class="btn-gold">Add Tournament</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ADD MATCH MODAL -->
+<div class="modal fade" id="addMatchModal" tabindex="-1">
+  <div class="modal-dialog modal-lg modal-dialog-centered">
+    <div class="modal-content modal-fifa">
+      <div class="modal-header-fifa d-flex align-items-center justify-content-between">
+        <span class="modal-title-fifa">Add New Match</span>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body-fifa">
+        <form method="POST" action="{{ url_for('add_match') }}">
+          <div class="row g-3">
+            <div class="col-md-6">
+              <label>Tournament Year *</label>
+              <select name="tournament_id" class="form-select-fifa w-100" required>
+                {% for t in tournaments %}
+                <option value="{{ t.tournament_id }}">{{ t.year }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="col-md-6">
+              <label>Venue</label>
+              <select name="venue_id" class="form-select-fifa w-100">
+                <option value="">— None —</option>
+                {% for v in venues %}
+                <option value="{{ v.venue_id }}">{{ v.name }}, {{ v.city }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="col-md-6">
+              <label>Home Team *</label>
+              <select name="home_team_id" class="form-select-fifa w-100" required>
+                {% for c in countries %}
+                <option value="{{ c.country_id }}">{{ c.name }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="col-md-6">
+              <label>Away Team *</label>
+              <select name="away_team_id" class="form-select-fifa w-100" required>
+                {% for c in countries %}
+                <option value="{{ c.country_id }}">{{ c.name }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="col-md-3">
+              <label>Home Score *</label>
+              <input type="number" name="home_score" min="0" class="form-control-fifa w-100" required value="0">
+            </div>
+            <div class="col-md-3">
+              <label>Away Score *</label>
+              <input type="number" name="away_score" min="0" class="form-control-fifa w-100" required value="0">
+            </div>
+            <div class="col-md-6">
+              <label>Stage *</label>
+              <select name="stage" class="form-select-fifa w-100" required>
+                <option value="">— Select Stage —</option>
+                <option value="Group Stage">Group Stage</option>
+                <option value="Round of 16">Round of 16</option>
+                <option value="Quarter-finals">Quarter-finals</option>
+                <option value="Semi-finals">Semi-finals</option>
+                <option value="Third place">Third place</option>
+                <option value="Final">Final</option>
+              </select>
+            </div>
+            <div class="col-md-6">
+              <label>Round Number</label>
+              <select name="round_num" id="roundNumSelect" class="form-select-fifa w-100">
+                <option value="">— Auto (based on stage) —</option>
+                <option value="1">1 — Group Stage</option>
+                <option value="2">2 — Round of 16</option>
+                <option value="3">3 — Quarter-finals</option>
+                <option value="4">4 — Semi-finals</option>
+                <option value="5">5 — Third place</option>
+                <option value="6">6 — Final</option>
+              </select>
+            </div>
+            <div class="col-md-6">
+              <label>Match Date</label>
+              <input type="date" name="match_date" class="form-control-fifa w-100">
+            </div>
+            <div class="col-md-6">
+              <label>Attendance</label>
+              <input type="number" name="attendance" min="0" class="form-control-fifa w-100" placeholder="e.g. 75000">
+            </div>
+          </div>
+          <div class="mt-4 text-end">
+            <button type="button" class="btn-outline-gold me-2" data-bs-dismiss="modal">Cancel</button>
+            <button type="submit" class="btn-gold">Save Match</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+const stageRoundMap = {
+  'Group Stage':'1','Round of 16':'2','Quarter-finals':'3',
+  'Semi-finals':'4','Third place':'5','Final':'6'
+};
+const stageSelect = document.querySelector('#addMatchModal [name="stage"]');
+const roundSelect = document.getElementById('roundNumSelect');
+if (stageSelect && roundSelect) {
+  stageSelect.addEventListener('change', function () {
+    const auto = stageRoundMap[this.value];
+    if (auto) roundSelect.value = auto;
+  });
+}
+</script>
+{% endblock %}
