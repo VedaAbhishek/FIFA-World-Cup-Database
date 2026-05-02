@@ -362,7 +362,7 @@ def countries():
 
 
 # ─────────────────────────────────────────────
-# ANALYTICS / VISUALIZATIONS
+# ANALYTICS / VISUALIZATIONS /
 # Author - Mohammed Aazam Tadipatri
 # ─────────────────────────────────────────────
 @app.route("/analytics")
