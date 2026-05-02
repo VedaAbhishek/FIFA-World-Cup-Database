@@ -21,7 +21,7 @@ def ensure_db():
 
 
 # ─────────────────────────────────────────────
-# HOME / DASHBOARD
+# HOME / DASHBOARD /
 # Author: Veda Abhishek Kovvireddy
 # ─────────────────────────────────────────────
 @app.route("/")
